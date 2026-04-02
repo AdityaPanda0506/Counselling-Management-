@@ -1,27 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { ShieldAlert, Calendar, CheckCircle } from 'lucide-react';
+import { ShieldAlert, Calendar, CheckCircle, Activity } from 'lucide-react';
 
 const StudentDashboard = () => {
   const studentId = localStorage.getItem('student_id');
+  const block = localStorage.getItem('block') || 'Block A';
   const [pulseData, setPulseData] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Dashboard states
   const [bookingDate, setBookingDate] = useState('');
   const [bookingStatus, setBookingStatus] = useState('');
+  
+  // Manual Pulse Entry states
+  const [moodScore, setMoodScore] = useState(3);
+  const [stressScore, setStressScore] = useState(3);
+  const [logStatus, setLogStatus] = useState('');
+
+  const fetchAverages = useCallback(async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/pulse/average/${studentId}`);
+      setPulseData(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [studentId]);
 
   useEffect(() => {
-    const fetchAverages = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5000/api/pulse/average/${studentId}`);
-        setPulseData(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAverages();
-  }, [studentId]);
+  }, [fetchAverages]);
 
   const handleBook = async (isSos = false) => {
     if (!isSos && !bookingDate) {
@@ -39,6 +48,25 @@ const StudentDashboard = () => {
       setTimeout(() => setBookingStatus(''), 5000);
     } catch (err) {
       alert("Failed to book session.");
+    }
+  };
+
+  const handleLogPulse = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('http://localhost:5000/api/pulse', {
+        student_id: studentId,
+        mood_score: parseInt(moodScore),
+        stress_score: parseInt(stressScore),
+        block: block
+      });
+      setLogStatus("Pulse Entry Saved!");
+      setTimeout(() => setLogStatus(''), 3000);
+      
+      // Refresh the averages immediately
+      fetchAverages();
+    } catch (err) {
+      alert("Failed to save pulse entry.");
     }
   };
 
@@ -70,12 +98,47 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {bookingStatus && (
-        <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.2)', border: '1px solid var(--success)', borderRadius: '8px', marginBottom: '24px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CheckCircle size={20} />
-          {bookingStatus}
-        </div>
-      )}
+      {/* Manual Pulse Entry Section */}
+      <div className="glass-panel" style={{ marginBottom: '32px', border: '1px solid var(--accent)' }}>
+        <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent)' }}>
+          <Activity size={24} /> Log Manual Pulse Check
+        </h2>
+        
+        <form onSubmit={handleLogPulse} style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ flex: '1', minWidth: '250px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span>Mood Level (1: Sad - 5: Happy)</span>
+              <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{moodScore}/5</span>
+            </label>
+            <input 
+              type="range" 
+              min="1" max="5" 
+              value={moodScore} 
+              onChange={(e) => setMoodScore(e.target.value)} 
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div style={{ flex: '1', minWidth: '250px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span>Stress / Pulse Rate Level (1: Low - 5: High)</span>
+              <span style={{ fontWeight: 'bold', color: stressScore >= 4 ? 'var(--danger)' : 'var(--primary)' }}>{stressScore}/5</span>
+            </label>
+            <input 
+              type="range" 
+              min="1" max="5" 
+              value={stressScore} 
+              onChange={(e) => setStressScore(e.target.value)} 
+              style={{ width: '100%' }}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button type="submit" className="btn btn-primary" style={{ height: '42px', marginTop: '16px' }}>Save Entry</button>
+            {logStatus && <span style={{ color: 'var(--success)', marginTop: '16px' }}>{logStatus}</span>}
+          </div>
+        </form>
+      </div>
 
       <div className="grid-cards">
         <div className="glass-panel">
@@ -87,7 +150,7 @@ const StudentDashboard = () => {
         </div>
 
         <div className="glass-panel">
-          <h3 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>7-Day Average Stress</h3>
+          <h3 style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>7-Day Average Stress/Pulse</h3>
           <div style={{ fontSize: '3rem', fontWeight: 'bold', color: pulseData?.avg_stress >= 4 ? 'var(--danger)' : 'var(--primary)' }}>
             {pulseData?.avg_stress || "N/A"}<span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>/5</span>
           </div>
@@ -100,6 +163,14 @@ const StudentDashboard = () => {
           <Calendar size={24} color="var(--primary)" />
           Book a Counselling Session
         </h2>
+        
+        {bookingStatus && (
+          <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.2)', border: '1px solid var(--success)', borderRadius: '8px', marginBottom: '24px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle size={20} />
+            {bookingStatus}
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '16px', maxWidth: '400px' }}>
           <input 
             type="date" 

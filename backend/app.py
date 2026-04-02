@@ -23,9 +23,10 @@ def hash_student_id(student_id):
 def log_pulse():
     data = request.json
     student_id = data.get('student_id')
-    mood_score = data.get('mood_score') # e.g. 1 (sad) to 5 (happy)
-    stress_score = data.get('stress_score') # e.g. 1 (low) to 5 (high)
-    block = data.get('block') # e.g., "Block A"
+    # Can also be actual pulse rate, but keeping it consistent with the scoring logic for averages
+    mood_score = data.get('mood_score') 
+    stress_score = data.get('stress_score') 
+    block = data.get('block') 
     
     if not all([student_id, mood_score, stress_score, block]):
         return jsonify({"error": "Missing data"}), 400
@@ -34,14 +35,13 @@ def log_pulse():
     
     pulse_log = {
         "student_hash": student_hash,
-        "mood_score": mood_score,
-        "stress_score": stress_score,
+        "mood_score": int(mood_score),
+        "stress_score": int(stress_score),
         "block": block,
         "timestamp": datetime.utcnow()
     }
     
     db.pulses.insert_one(pulse_log)
-    
     return jsonify({"message": "Pulse logged successfully anonymously."}), 201
 
 @app.route('/api/pulse/average/<student_id>', methods=['GET'])
@@ -94,6 +94,47 @@ def block_analytics():
             "total_logs": r["total_logs"]
         })
         
+    return jsonify(formatted), 200
+
+@app.route('/api/analytics/students/<block>', methods=['GET'])
+def student_details_by_block(block):
+    # Per student averages within a block using last 7 days
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+
+    pipeline = [
+        {
+            "$match": {
+                "block": block,
+                "timestamp": {"$gte": seven_days_ago}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$student_hash",
+                "avg_mood": {"$avg": "$mood_score"},
+                "avg_stress": {"$avg": "$stress_score"},
+                "logs_count": {"$sum": 1},
+                "latest": {"$max": "$timestamp"}
+            }
+        },
+        { "$sort": { "avg_stress": -1 } }
+    ]
+    results = list(db.pulses.aggregate(pipeline))
+
+    formatted = []
+    for r in results:
+        avg_mood = round(r["avg_mood"], 2)
+        avg_stress = round(r["avg_stress"], 2)
+        formatted.append({
+            "student_hash": r["_id"],
+            "short_id": r["_id"][:10],  # show first 10 chars for display
+            "avg_mood": avg_mood,
+            "avg_stress": avg_stress,
+            "logs_count": r["logs_count"],
+            "latest": r["latest"].isoformat() if r.get("latest") else None,
+            "is_alarming": avg_mood <= 2.5 or avg_stress >= 4.0
+        })
+
     return jsonify(formatted), 200
 
 @app.route('/api/counselling/book', methods=['POST'])
