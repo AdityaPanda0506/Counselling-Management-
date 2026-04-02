@@ -152,45 +152,43 @@ const WardenDashboard = () => {
                         IDs anonymized via SHA-256
                       </div>
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                          <th style={{ textAlign: 'left', padding: '10px 16px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.875rem' }}>Anonymous ID</th>
-                          <th style={{ textAlign: 'center', padding: '10px 16px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.875rem' }}>Avg Mood</th>
-                          <th style={{ textAlign: 'center', padding: '10px 16px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.875rem' }}>Avg Stress</th>
-                          <th style={{ textAlign: 'center', padding: '10px 16px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.875rem' }}>Entries</th>
-                          <th style={{ textAlign: 'center', padding: '10px 16px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.875rem' }}>Status</th>
-                          <th style={{ textAlign: 'right', padding: '10px 16px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.875rem' }}>Last Logged</th>
+                          <th style={{ textAlign: 'left',   padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Anon ID</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Mood</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Stress</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Sleep</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Screen</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Missed</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Meals Skipped</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Entries</th>
+                          <th style={{ textAlign: 'center', padding: '10px 12px', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.8rem' }}>Status</th>
                         </tr>
                       </thead>
                       <tbody>
                         {students.map((s, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: s.is_alarming ? 'rgba(239, 68, 68, 0.05)' : 'transparent' }}>
-                            <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                              {s.short_id}...
-                            </td>
-                            <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 'bold', color: getMoodColor(s.avg_mood) }}>
-                              {s.avg_mood}/5
-                            </td>
-                            <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 'bold', color: getStressColor(s.avg_stress) }}>
-                              {s.avg_stress}/5
-                            </td>
-                            <td style={{ padding: '12px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                              {s.logs_count}
-                            </td>
-                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: s.is_alarming ? 'rgba(239,68,68,0.05)' : 'transparent' }}>
+                            <td style={{ padding: '11px 12px', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.short_id}...</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', fontWeight: 'bold', color: getMoodColor(s.avg_mood) }}>{s.avg_mood ?? '—'}/5</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', fontWeight: 'bold', color: getStressColor(s.avg_stress) }}>{s.avg_stress ?? '—'}/5</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', color: '#a78bfa' }}>{s.avg_sleep != null ? `${s.avg_sleep}h` : '—'}</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', color: '#38bdf8' }}>{s.avg_screen != null ? `${s.avg_screen}h` : '—'}</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', color: s.avg_missed >= 4 ? 'var(--danger)' : '#fb923c' }}>{s.avg_missed ?? '—'}</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', color: s.avg_meals_skipped >= 2 ? 'var(--danger)' : '#f472b6' }}>{s.avg_meals_skipped ?? '—'}</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--text-muted)' }}>{s.logs_count}</td>
+                            <td style={{ padding: '11px 12px', textAlign: 'center' }}>
                               {s.is_alarming
-                                ? <span style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--danger)', padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold' }}>⚠ Alarming</span>
-                                : <span style={{ background: 'rgba(16,185,129,0.2)', color: 'var(--success)', padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem' }}>✓ Normal</span>
+                                ? <span style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--danger)', padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 'bold' }}>⚠ Alert</span>
+                                : <span style={{ background: 'rgba(16,185,129,0.2)', color: 'var(--success)', padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem' }}>✓ OK</span>
                               }
-                            </td>
-                            <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                              {s.latest ? new Date(s.latest).toLocaleDateString() : '—'}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </>
                 )}
               </div>
