@@ -10,6 +10,7 @@ import CounsellorDashboard from './components/CounsellorDashboard';
 import ParentDashboard from './components/ParentDashboard';
 import FriendDashboard from './components/FriendDashboard';
 import StudentSignUp from './components/StudentSignUp';
+import CounsellorSignUp from './components/CounsellorSignUp';
 import './index.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           {/* Public Warden Portal & Signup */}
           <Route path="/warden"           element={<WardenDashboard />} />
           <Route path="/warden/signup/*" element={<StudentSignUp />} />
+          <Route path="/warden/counsellor/signup/*" element={<CounsellorSignUp />} />
 
           {/* Clerk Login Routes */}
           <Route path="/login/student/*"     element={<Login fixedRole="student" redirect="/student" />} />

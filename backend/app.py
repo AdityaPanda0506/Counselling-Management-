@@ -9,7 +9,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Robust CORS configuration
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+@app.before_request
+def log_request():
+    print(f"DEBUG: {request.method} {request.path}")
 
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
@@ -233,12 +238,14 @@ def book_counselling():
     regno  = str(data.get('student_id') or data.get('regno')).strip().lower()
     date   = data.get('date')
     is_sos = data.get('is_sos', False)
+    c_name = data.get('counsellor_name', 'System Assigned')
     db.appointments.insert_one({
-        "regno":      regno,
-        "date":       date,
-        "is_sos":     is_sos,
-        "status":     "pending",
-        "created_at": datetime.utcnow()
+        "regno":           regno,
+        "date":            date,
+        "is_sos":          is_sos,
+        "counsellor_name": c_name,
+        "status":          "pending",
+        "created_at":      datetime.utcnow()
     })
     return jsonify({"message": "Appointment booked"}), 201
 
@@ -247,6 +254,34 @@ def book_counselling():
 def get_appointments():
     appointments = list(db.appointments.find({}, {"_id": 0}))
     return jsonify(appointments), 200
+
+
+# ─────────────────────────────────────────────
+#  COUNSELLOR PROFILES
+# ─────────────────────────────────────────────
+
+@app.route('/api/counsellors/profile', methods=['POST'])
+def update_counsellor_profile():
+    data = request.json
+    clerk_id = data.get('clerk_id')
+    name = data.get('name', 'Anonymous Counsellor')
+    spec = data.get('specialization', 'General Support')
+    
+    if not clerk_id:
+        return jsonify({"error": "clerk_id is required"}), 400
+
+    db.counsellors.update_one(
+        {"clerk_id": clerk_id},
+        {"$set": {"clerk_id": clerk_id, "name": name, "specialization": spec, "updated_at": datetime.utcnow()}},
+        upsert=True
+    )
+    return jsonify({"message": "Profile updated"}), 200
+
+
+@app.route('/api/counsellors', methods=['GET'])
+def list_counsellors():
+    counsellors = list(db.counsellors.find({}, {"_id": 0}))
+    return jsonify(counsellors), 200
 
 
 # ─────────────────────────────────────────────

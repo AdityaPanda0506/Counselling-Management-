@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Brain, Calendar, ShieldAlert } from 'lucide-react';
+import { Brain, Calendar, ShieldAlert, User, CheckCircle } from 'lucide-react';
+import { useUser } from '@clerk/react';
 
 const CounsellorDashboard = () => {
+  const { user } = useUser();
   const [appointments, setAppointments] = useState([]);
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [profile, setProfile] = useState({
+    name: user?.fullName || '',
+    specialization: 'General Support'
+  });
+  const [updating, setUpdating] = useState(false);
+  const [updated, setUpdated] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -14,14 +23,40 @@ const CounsellorDashboard = () => {
         const predRes = await axios.get('http://localhost:5000/api/ml/predict');
         setAppointments(aptRes.data);
         setPredictions(predRes.data);
+        
+        // Fetch current profile
+        const cRes = await axios.get('http://localhost:5000/api/counsellors');
+        const myProfile = cRes.data.find(c => c.clerk_id === user?.id);
+        if (myProfile) {
+          setProfile({ name: myProfile.name, specialization: myProfile.specialization });
+        }
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    if (user) fetchData();
+  }, [user]);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    try {
+      await axios.post('http://localhost:5000/api/counsellors/profile', {
+        clerk_id: user?.id,
+        name: profile.name,
+        specialization: profile.specialization
+      });
+      setUpdated(true);
+      setTimeout(() => setUpdated(false), 3000);
+    } catch (err) {
+      console.error('Counsellor Profile Update Error:', err.response || err);
+      alert('Failed to update profile. Please see console for details.');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   if (loading) return <div>Loading Counsellor Data...</div>;
 
@@ -32,7 +67,47 @@ const CounsellorDashboard = () => {
     <div className="animate-fade-in">
       <div className="dashboard-header">
         <h1>Counsellor Portal</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Manage appointments and upcoming ML-driven insights.</p>
+        <p style={{ color: 'var(--text-muted)' }}>Logged in as: <strong>{profile.name || user?.username}</strong></p>
+      </div>
+
+      {/* Profile Section */}
+      <div className="glass-panel" style={{ marginBottom: '32px', border: '1px solid var(--primary)' }}>
+        <h2 style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
+          <User size={24} /> Complete Your Professional Profile
+        </h2>
+        <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', alignItems: 'flex-end' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Public Name (Visible to Students)</label>
+            <input 
+              type="text" 
+              value={profile.name} 
+              onChange={e => setProfile({...profile, name: e.target.value})}
+              placeholder="e.g. Dr. Jane Smith"
+              required
+              style={{ marginBottom: 0 }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Specialization</label>
+            <input 
+              type="text" 
+              value={profile.specialization} 
+              onChange={e => setProfile({...profile, specialization: e.target.value})}
+              placeholder="e.g. Stress Management"
+              required
+              style={{ marginBottom: 0 }}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button type="submit" className="btn btn-primary" disabled={updating}>
+              {updating ? 'Saving...' : 'Update Public Profile'}
+            </button>
+            {updated && <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={16}/> Saved!</span>}
+          </div>
+        </form>
+        <p style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          Tip: Your profile will appear in the Student Portal for session booking.
+        </p>
       </div>
 
       <div className="grid-cards">

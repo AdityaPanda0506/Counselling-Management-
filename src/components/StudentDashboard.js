@@ -22,6 +22,9 @@ const StudentDashboard = () => {
   const [bookingStatus, setBookingStatus] = useState('');
   const [logStatus, setLogStatus]     = useState('');
   const [saving, setSaving]           = useState(false);
+  const [counsellors, setCounsellors] = useState([]);
+  const [selectedCounsellor, setSelectedCounsellor] = useState('');
+  const [appointments, setAppointments] = useState([]);
 
   const [form, setForm] = useState({
     mood_score:   3,
@@ -41,9 +44,19 @@ const StudentDashboard = () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/wellbeing/summary/${regno}`);
       setSummary(res.data);
+      
+      const cRes = await axios.get('http://localhost:5000/api/counsellors');
+      setCounsellors(cRes.data);
+      if (cRes.data.length > 0 && !selectedCounsellor) {
+        setSelectedCounsellor(cRes.data[0].name);
+      }
+
+      const aptRes = await axios.get('http://localhost:5000/api/counselling/appointments');
+      const myApts = aptRes.data.filter(a => a.regno === regno);
+      setAppointments(myApts);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [regno]);
+  }, [regno, selectedCounsellor]);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
@@ -74,9 +87,11 @@ const StudentDashboard = () => {
       await axios.post('http://localhost:5000/api/counselling/book', {
         regno,
         date: isSos ? new Date().toISOString().split('T')[0] : bookingDate,
-        is_sos: isSos
+        is_sos: isSos,
+        counsellor_name: isSos ? 'Emergency Duty Counsellor' : selectedCounsellor
       });
       setBookingStatus(isSos ? 'SOS Alert Sent! Counsellor will contact you shortly.' : 'Session Booked!');
+      fetchSummary();
       setTimeout(() => setBookingStatus(''), 5000);
     } catch { alert('Failed to book session.'); }
   };
@@ -240,10 +255,47 @@ const StudentDashboard = () => {
             <CheckCircle size={18} /> {bookingStatus}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '16px', maxWidth: '420px' }}>
-          <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} style={{ marginBottom: 0 }} />
-          <button className="btn btn-primary" onClick={() => handleBook(false)}>Book</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '420px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Choose Counsellor</label>
+            <select value={selectedCounsellor} onChange={e => setSelectedCounsellor(e.target.value)}>
+              {counsellors.map((c, i) => (
+                <option key={i} value={c.name}>{c.name} ({c.specialization})</option>
+              ))}
+              {counsellors.length === 0 && <option>No counsellors registered yet</option>}
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} style={{ marginBottom: 0 }} />
+            <button className="btn btn-primary" onClick={() => handleBook(false)}>Book</button>
+          </div>
         </div>
+
+        {/* Upcoming Sessions */}
+        {appointments.length > 0 && (
+          <div style={{ marginTop: '32px' }}>
+            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Upcoming Sessions</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {appointments.map((apt, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ display: 'block' }}>{apt.counsellor_name}</strong>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{apt.date}</span>
+                  </div>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '4px 8px', 
+                    borderRadius: '4px', 
+                    background: apt.status === 'pending' ? 'rgba(255,255,255,0.1)' : 'rgba(52,211,153,0.1)',
+                    color: apt.status === 'pending' ? 'var(--text-muted)' : 'var(--success)'
+                  }}>
+                    {apt.status.toUpperCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
