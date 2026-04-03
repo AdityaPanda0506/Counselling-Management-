@@ -3,6 +3,7 @@ import hashlib
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO, join_room, emit
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
@@ -11,6 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 # Robust CORS configuration
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.before_request
 def log_request():
@@ -148,6 +150,7 @@ def send_friend_request():
         {"$addToSet": {"pending_requests": sender}},
         upsert=True
     )
+    socketio.emit('new_friend_request', {'sender': sender}, to=target)
     return jsonify({"message": "Request sent"}), 200
 
 @app.route('/api/friends/approve', methods=['POST'])
@@ -170,6 +173,7 @@ def approve_friend():
         {"$addToSet": {"friends": user}},
         upsert=True
     )
+    socketio.emit('friend_request_approved', {'user': user}, to=requester)
     return jsonify({"message": "Approved"}), 200
 
 @app.route('/api/friends/reject', methods=['POST'])
@@ -182,6 +186,12 @@ def reject_friend():
         {"$pull": {"pending_requests": requester}}
     )
     return jsonify({"message": "Rejected"}), 200
+
+@socketio.on('join')
+def on_join(data):
+    regno = str(data.get('regno', '')).strip().lower()
+    if regno:
+        join_room(regno)
 
 # ─────────────────────────────────────────────
 #  GET /api/wellbeing/summary/<regno>
