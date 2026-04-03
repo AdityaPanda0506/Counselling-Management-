@@ -23,14 +23,6 @@ const Landing = () => {
       route: '/login/parent',
     },
     {
-      icon: <UsersRound size={48} />,
-      iconBg: 'rgba(52, 211, 153, 0.2)',
-      iconColor: '#34d399',
-      title: 'Friend Portal',
-      desc: "Notice something about your friend's mood or behaviour? Your honest observation could help them.",
-      route: '/login/friend',
-    },
-    {
       icon: <ShieldAlert size={48} />,
       iconBg: 'rgba(16, 185, 129, 0.2)',
       iconColor: 'var(--success)',

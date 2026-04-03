@@ -26,6 +26,12 @@ const StudentDashboard = () => {
   const [selectedCounsellor, setSelectedCounsellor] = useState('');
   const [appointments, setAppointments] = useState([]);
 
+  const [peerStudents, setPeerStudents] = useState([]);
+  const [selectedFriend, setSelectedFriend] = useState('');
+  const [friendForm, setFriendForm] = useState({ stress_obs: 3, social_obs: 3 });
+  const [friendSaving, setFriendSaving] = useState(false);
+  const [friendLogStatus, setFriendLogStatus] = useState('');
+
   const [form, setForm] = useState({
     mood_score:   3,
     stress_score: 3,
@@ -54,9 +60,16 @@ const StudentDashboard = () => {
       const aptRes = await axios.get('http://localhost:5000/api/counselling/appointments');
       const myApts = aptRes.data.filter(a => a.regno === regno);
       setAppointments(myApts);
+
+      const stdRes = await axios.get('http://localhost:5000/api/students/all');
+      const peers = stdRes.data.filter(id => id !== regno);
+      setPeerStudents(peers);
+      if (peers.length > 0 && !selectedFriend) {
+        setSelectedFriend(peers[0]);
+      }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [regno, selectedCounsellor]);
+  }, [regno, selectedCounsellor, selectedFriend]);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
@@ -79,6 +92,25 @@ const StudentDashboard = () => {
       fetchSummary();
     } catch { alert('Failed to save entry.'); }
     finally { setSaving(false); }
+  };
+
+  const handleFriendLog = async (e) => {
+    e.preventDefault();
+    if (!selectedFriend) return;
+    setFriendSaving(true);
+    try {
+      await axios.post('http://localhost:5000/api/wellbeing', {
+        regno: selectedFriend,
+        block,
+        submitted_by: 'friend',
+        friend_stress_obs: parseInt(friendForm.stress_obs),
+        friend_social_obs: parseInt(friendForm.social_obs),
+      });
+      setFriendLogStatus('Friend observation saved!');
+      setTimeout(() => setFriendLogStatus(''), 3000);
+      fetchSummary();
+    } catch { alert('Failed to save friend entry.'); }
+    finally { setFriendSaving(false); }
   };
 
   const handleBook = async (isSos = false) => {
@@ -195,6 +227,55 @@ const StudentDashboard = () => {
             {logStatus && (
               <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <CheckCircle size={16} /> {logStatus}
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* ─── Friend Check-in ─── */}
+      <div className="glass-panel" style={{ marginBottom: '32px', border: '1px solid rgba(52,211,153,0.4)' }}>
+        <h2 style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px', color: '#34d399' }}>
+          <span style={{fontSize:'22px'}}>👥</span> Log Friend Observation
+        </h2>
+        <form onSubmit={handleFriendLog}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '28px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px' }}>Friend's Reg No.</label>
+              <input 
+                 list="peers" 
+                 type="text" 
+                 value={selectedFriend} 
+                 onChange={e => setSelectedFriend(e.target.value)} 
+                 placeholder="Type or select Reg No." 
+                 required
+              />
+              <datalist id="peers">
+                {peerStudents.map((p, i) => <option key={i} value={p} />)}
+              </datalist>
+            </div>
+            <div>
+              <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Activity size={15} color="#34d399" /> Stress Level</span>
+                <strong style={{ color: friendForm.stress_obs >= 4 ? 'var(--danger)' : '#34d399' }}>{stressLabel[friendForm.stress_obs]}</strong>
+              </label>
+              <input type="range" min="1" max="5" value={friendForm.stress_obs} onChange={e => setFriendForm({...friendForm, stress_obs: e.target.value})} />
+            </div>
+            <div>
+              <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{fontSize:'15px'}}>👥</span> Social Life</span>
+                <strong style={{ color: '#34d399' }}>{socialLabel[friendForm.social_obs]}</strong>
+              </label>
+              <input type="range" min="1" max="5" value={friendForm.social_obs} onChange={e => setFriendForm({...friendForm, social_obs: e.target.value})} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '28px' }}>
+            <button type="submit" className="btn btn-secondary" disabled={friendSaving}>
+              {friendSaving ? 'Saving...' : 'Save Observation'}
+            </button>
+            {friendLogStatus && (
+              <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle size={16} /> {friendLogStatus}
               </span>
             )}
           </div>

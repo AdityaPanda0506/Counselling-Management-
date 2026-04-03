@@ -7,6 +7,7 @@ const CounsellorDashboard = () => {
   const { user } = useUser();
   const [appointments, setAppointments] = useState([]);
   const [predictions, setPredictions] = useState([]);
+  const [myStudents, setMyStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [profile, setProfile] = useState({
@@ -29,6 +30,8 @@ const CounsellorDashboard = () => {
         const myProfile = cRes.data.find(c => c.clerk_id === user?.id);
         if (myProfile) {
           setProfile({ name: myProfile.name, specialization: myProfile.specialization });
+          const myStRes = await axios.get(`http://localhost:5000/api/counselling/my_students/${encodeURIComponent(myProfile.name)}`);
+          setMyStudents(myStRes.data);
         }
       } catch (err) {
         console.error(err);
@@ -160,6 +163,36 @@ const CounsellorDashboard = () => {
                     >
                       <Video size={18} /> Join Video Session
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="glass-panel" style={{ border: '1px solid var(--success)' }}>
+            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
+              <User size={24} /> My Linked Students
+            </h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '0.9rem' }}>
+              Detailed analytics for students assigned to you through sessions.
+            </p>
+            {myStudents.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)' }}>No students linked yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {myStudents.map((st, i) => (
+                  <div key={i} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '16px', borderRadius: '12px', borderLeft: st.is_alarming ? '4px solid var(--danger)' : '4px solid var(--success)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                      <strong style={{ fontSize: '1.1rem' }}>Student ID: {st.regno.toUpperCase()}</strong>
+                      {st.is_alarming && <span style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 'bold' }}>Needs Attention</span>}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.9rem' }}>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Avg Mood:</span> <strong style={{ color: 'var(--accent)' }}>{st.avg_mood ?? 'N/A'}/5</strong></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Avg Stress:</span> <strong style={{ color: st.avg_stress >= 4 ? 'var(--danger)' : 'var(--primary)' }}>{st.avg_stress ?? 'N/A'}/5</strong></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Meals Missed:</span> <strong>{st.meals_missed}</strong></div>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Classes Skipped:</span> <strong>{st.classes_skipped}</strong></div>
+                      <div style={{ gridColumn: '1 / -1' }}><span style={{ color: 'var(--text-muted)' }}>Parent Contact:</span> {st.parents_contact}</div>
+                    </div>
                   </div>
                 ))}
               </div>

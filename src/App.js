@@ -8,7 +8,6 @@ import StudentDashboard from './components/StudentDashboard';
 import WardenDashboard from './components/WardenDashboard';
 import CounsellorDashboard from './components/CounsellorDashboard';
 import ParentDashboard from './components/ParentDashboard';
-import FriendDashboard from './components/FriendDashboard';
 import StudentSignUp from './components/StudentSignUp';
 import CounsellorSignUp from './components/CounsellorSignUp';
 import './index.css';
@@ -31,7 +30,6 @@ function App() {
           <Route path="/login/warden/*"      element={<Login fixedRole="warden" redirect="/warden" />} />
           <Route path="/login/counsellor/*"  element={<Login fixedRole="counsellor" redirect="/counsellor" />} />
           <Route path="/login/parent/*"      element={<Login fixedRole="parent" redirect="/parent" />} />
-          <Route path="/login/friend/*"      element={<Login fixedRole="friend" redirect="/friend" />} />
 
           {/* Authenticated Routes with Sidebar */}
           <Route path="/*" element={
@@ -43,7 +41,6 @@ function App() {
                     <Route path="/student"    element={<StudentDashboard />} />
                     <Route path="/counsellor" element={<CounsellorDashboard />} />
                     <Route path="/parent"     element={<ParentDashboard />} />
-                    <Route path="/friend"     element={<FriendDashboard />} />
                     <Route path="*"           element={<Navigate to="/" replace />} />
                   </Routes>
                 </div>
@@ -53,7 +50,6 @@ function App() {
                    <Route path="/student"    element={<RedirectToSignIn />} />
                    <Route path="/counsellor" element={<RedirectToSignIn />} />
                    <Route path="/parent"     element={<RedirectToSignIn />} />
-                   <Route path="/friend"     element={<RedirectToSignIn />} />
                 </Routes>
               </Show>
             </>
