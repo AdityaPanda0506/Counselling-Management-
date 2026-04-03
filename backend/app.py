@@ -96,7 +96,6 @@ def log_wellbeing():
 
     elif submitted_by == 'friend':
         entry = {
-            "mood_obs":   data.get('friend_mood_obs'),
             "stress_obs": data.get('friend_stress_obs'),
             "social_obs": data.get('friend_social_obs'),
             "ts":         ts
@@ -114,6 +113,14 @@ def log_wellbeing():
 
     return jsonify({"message": f"Data saved for regno {regno}."}), 201
 
+
+# ─────────────────────────────────────────────
+#  GET /api/students/all
+# ─────────────────────────────────────────────
+@app.route('/api/students/all', methods=['GET'])
+def get_all_students():
+    docs = list(db.students.find({}, {"regno": 1, "_id": 0}))
+    return jsonify(list(set([d.get("regno") for d in docs if d.get("regno")]))), 200
 
 # ─────────────────────────────────────────────
 #  GET /api/wellbeing/summary/<regno>
@@ -169,6 +176,15 @@ def get_wellbeing_summary(regno):
 # ─────────────────────────────────────────────
 #  ANALYTICS — block level
 # ─────────────────────────────────────────────
+@app.route('/api/warden/alert', methods=['POST'])
+def warden_alert():
+    data = request.json
+    db.alerts.insert_one({
+        "regno": data.get('regno'),
+        "message": data.get('message', 'Alert from parent'),
+        "created_at": datetime.utcnow()
+    })
+    return jsonify({"message": "Alert sent to warden"}), 201
 
 @app.route('/api/analytics/blocks', methods=['GET'])
 def block_analytics():
@@ -254,6 +270,32 @@ def book_counselling():
 def get_appointments():
     appointments = list(db.appointments.find({}, {"_id": 0}))
     return jsonify(appointments), 200
+
+@app.route('/api/counselling/my_students/<counsellor_name>', methods=['GET'])
+def get_my_students(counsellor_name):
+    from urllib.parse import unquote
+    counsellor_name = unquote(counsellor_name)
+    apts = list(db.appointments.find({"counsellor_name": counsellor_name}))
+    regnos = list(set([a['regno'] for a in apts]))
+    
+    result = []
+    for regno in regnos:
+        doc = db.students.find_one({"regno": regno})
+        if not doc:
+            continue
+        entries = recent(doc.get('student_entries', []))
+        avg_mood = safe_avg(entries, 'mood')
+        avg_stress = safe_avg(entries, 'stress')
+        result.append({
+            "regno": regno,
+            "avg_mood": avg_mood,
+            "avg_stress": avg_stress,
+            "is_alarming": (avg_mood is not None and avg_mood <= 2.5) or (avg_stress is not None and avg_stress >= 4.0),
+            "meals_missed": 2,
+            "classes_skipped": 3,
+            "parents_contact": f"parent_{regno}@example.com"
+        })
+    return jsonify(result), 200
 
 
 # ─────────────────────────────────────────────
