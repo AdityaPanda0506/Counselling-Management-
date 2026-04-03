@@ -60,8 +60,8 @@ const CounsellorDashboard = () => {
 
   if (loading) return <div>Loading Counsellor Data...</div>;
 
-  const sosAppointments = appointments.filter(a => a.is_sos);
-  const regularAppointments = appointments.filter(a => !a.is_sos);
+  const sosAppointments = appointments.filter(a => a.is_sos && a.counsellor_name === profile.name);
+  const regularAppointments = appointments.filter(a => !a.is_sos && a.counsellor_name === profile.name);
 
   return (
     <div className="animate-fade-in">
