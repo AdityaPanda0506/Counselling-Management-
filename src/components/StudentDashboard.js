@@ -19,12 +19,12 @@ const StudentDashboard = () => {
   const regno = user?.username?.toLowerCase();
   const block = user?.publicMetadata?.block || 'Block A';
 
-  const [summary, setSummary]         = useState(null);
-  const [loading, setLoading]         = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [bookingDate, setBookingDate] = useState('');
   const [bookingStatus, setBookingStatus] = useState('');
-  const [logStatus, setLogStatus]     = useState('');
-  const [saving, setSaving]           = useState(false);
+  const [logStatus, setLogStatus] = useState('');
+  const [saving, setSaving] = useState(false);
   const [counsellors, setCounsellors] = useState([]);
   const [selectedCounsellor, setSelectedCounsellor] = useState('');
   const [appointments, setAppointments] = useState([]);
@@ -39,18 +39,19 @@ const StudentDashboard = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [addFriendRegno, setAddFriendRegno] = useState('');
   const [connStatus, setConnStatus] = useState('');
+  const [incomingPing, setIncomingPing] = useState(null);
 
   const [form, setForm] = useState({
-    mood_score:   3,
+    mood_score: 3,
     stress_score: 3,
-    pulse_bpm:    72,
-    sleep_hours:  7,
-    social_life:  3,
+    pulse_bpm: 72,
+    sleep_hours: 7,
+    social_life: 3,
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const moodLabel   = ['', 'Very Sad', 'Sad', 'Neutral', 'Happy', 'Very Happy'];
+  const moodLabel = ['', 'Very Sad', 'Sad', 'Neutral', 'Happy', 'Very Happy'];
   const stressLabel = ['', 'Very Low', 'Low', 'Manageable', 'High', 'Severe'];
   const socialLabel = ['', 'Isolated', 'Withdrawn', 'Normal', 'Socially Active', 'Very Social'];
 
@@ -58,7 +59,7 @@ const StudentDashboard = () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/wellbeing/summary/${regno}`);
       setSummary(res.data);
-      
+
       const cRes = await axios.get('http://localhost:5000/api/counsellors');
       setCounsellors(cRes.data);
       if (cRes.data.length > 0 && !selectedCounsellor) {
@@ -72,7 +73,7 @@ const StudentDashboard = () => {
       const stdRes = await axios.get('http://localhost:5000/api/students/all');
       const peers = stdRes.data.filter(id => id !== regno);
       setPeerStudents(peers);
-      
+
       const friendRes = await axios.get(`http://localhost:5000/api/friends/${regno}`);
       const fList = friendRes.data.friends || [];
       setFriendsList(fList);
@@ -101,6 +102,7 @@ const StudentDashboard = () => {
         if (!prev.includes(data.sender)) return [...prev, data.sender];
         return prev;
       });
+      setIncomingPing(data.sender);
     });
 
     socket.on('friend_request_approved', (data) => {
@@ -125,11 +127,11 @@ const StudentDashboard = () => {
         regno,
         block,
         submitted_by: 'student',
-        mood_score:   parseInt(form.mood_score),
+        mood_score: parseInt(form.mood_score),
         stress_score: parseInt(form.stress_score),
-        pulse_bpm:    parseInt(form.pulse_bpm),
-        sleep_hours:  parseFloat(form.sleep_hours),
-        social_life:  parseInt(form.social_life),
+        pulse_bpm: parseInt(form.pulse_bpm),
+        sleep_hours: parseFloat(form.sleep_hours),
+        social_life: parseInt(form.social_life),
       });
       setLogStatus('Entry Saved!');
       setTimeout(() => setLogStatus(''), 3000);
@@ -172,6 +174,7 @@ const StudentDashboard = () => {
   const handleApprove = async (requester) => {
     try {
       await axios.post('http://localhost:5000/api/friends/approve', { user: regno, requester });
+      if (incomingPing === requester) setIncomingPing(null);
       fetchSummary();
     } catch { alert('Failed to approve request.'); }
   };
@@ -179,6 +182,7 @@ const StudentDashboard = () => {
   const handleReject = async (requester) => {
     try {
       await axios.post('http://localhost:5000/api/friends/reject', { user: regno, requester });
+      if (incomingPing === requester) setIncomingPing(null);
       fetchSummary();
     } catch { alert('Failed to reject request.'); }
   };
@@ -200,12 +204,37 @@ const StudentDashboard = () => {
 
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>;
 
-  const s  = summary?.student;
-  const p  = summary?.parent;
+  const s = summary?.student;
+  const p = summary?.parent;
   const fr = summary?.friend;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in" style={{ position: 'relative' }}>
+      
+      {/* Real-time incoming ping modal */}
+      {incomingPing && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="glass-panel" style={{ background: 'var(--bg-dark)', border: '1px solid var(--primary)', padding: '32px', textAlign: 'center', maxWidth: '400px', width: '90%', animation: 'fade-in 0.3s ease-out' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>👋</div>
+            <h2 style={{ marginBottom: '16px', color: 'var(--text-main)' }}>Incoming Friend Request!</h2>
+            <p style={{ marginBottom: '24px', color: 'var(--text-muted)' }}>
+              <strong>{incomingPing.toUpperCase()}</strong> has sent you a connection ping. They want to be able to log peer observations for you.
+            </p>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button className="btn btn-success" style={{ width: '120px' }} onClick={() => handleApprove(incomingPing)}>
+                Approve
+              </button>
+              <button className="btn btn-danger" style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', width: '120px' }} onClick={() => handleReject(incomingPing)}>
+                Reject
+              </button>
+            </div>
+            <button style={{ marginTop: '24px', background: 'transparent', border: 'none', color: 'var(--text-muted)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => setIncomingPing(null)}>
+              Decide later
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-header">
         <h1>Welcome, Reg. No. {regno}</h1>
         <p style={{ color: 'var(--text-muted)' }}>Your 7-day well-being snapshot — tracked by you, your parents, and friends.</p>
@@ -282,7 +311,7 @@ const StudentDashboard = () => {
             {/* Social Life */}
             <div>
               <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{fontSize:'15px'}}>👥</span> Social Life</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontSize: '15px' }}>👥</span> Social Life</span>
                 <strong style={{ color: '#34d399' }}>{socialLabel[form.social_life]}</strong>
               </label>
               <input type="range" min="1" max="5" value={form.social_life} onChange={e => set('social_life', e.target.value)} />
@@ -306,7 +335,7 @@ const StudentDashboard = () => {
       {/* ─── Friend Check-in ─── */}
       <div className="glass-panel" style={{ marginBottom: '32px', border: '1px solid rgba(52,211,153,0.4)' }}>
         <h2 style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px', color: '#34d399' }}>
-          <span style={{fontSize:'22px'}}>👥</span> Log Friend Observation
+          <span style={{ fontSize: '22px' }}>👥</span> Log Friend Observation
         </h2>
         <form onSubmit={handleFriendLog}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '28px' }}>
@@ -322,14 +351,14 @@ const StudentDashboard = () => {
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Activity size={15} color="#34d399" /> Stress Level</span>
                 <strong style={{ color: friendForm.stress_obs >= 4 ? 'var(--danger)' : '#34d399' }}>{stressLabel[friendForm.stress_obs]}</strong>
               </label>
-              <input type="range" min="1" max="5" value={friendForm.stress_obs} onChange={e => setFriendForm({...friendForm, stress_obs: e.target.value})} />
+              <input type="range" min="1" max="5" value={friendForm.stress_obs} onChange={e => setFriendForm({ ...friendForm, stress_obs: e.target.value })} />
             </div>
             <div>
               <label style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{fontSize:'15px'}}>👥</span> Social Life</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ fontSize: '15px' }}>👥</span> Social Life</span>
                 <strong style={{ color: '#34d399' }}>{socialLabel[friendForm.social_obs]}</strong>
               </label>
-              <input type="range" min="1" max="5" value={friendForm.social_obs} onChange={e => setFriendForm({...friendForm, social_obs: e.target.value})} />
+              <input type="range" min="1" max="5" value={friendForm.social_obs} onChange={e => setFriendForm({ ...friendForm, social_obs: e.target.value })} />
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '28px' }}>
@@ -348,7 +377,7 @@ const StudentDashboard = () => {
       {/* ─── Manage Friends ─── */}
       <div className="glass-panel" style={{ marginBottom: '32px', border: '1px solid var(--primary)' }}>
         <h2 style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
-          <span style={{fontSize:'22px'}}>🤝</span> Manage Friend Connections
+          <span style={{ fontSize: '22px' }}>🤝</span> Manage Friend Connections
         </h2>
 
         {pendingRequests.length > 0 && (
@@ -357,7 +386,7 @@ const StudentDashboard = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {pendingRequests.map(req => (
                 <div key={req} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '4px' }}>
-                  <span><strong style={{color: 'var(--text-main)'}}>{req.toUpperCase()}</strong> wants to add you</span>
+                  <span><strong style={{ color: 'var(--text-main)' }}>{req.toUpperCase()}</strong> wants to add you</span>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button className="btn btn-success" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleApprove(req)}>Approve</button>
                     <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleReject(req)}>Reject</button>
@@ -371,14 +400,14 @@ const StudentDashboard = () => {
         <form onSubmit={handleSendReq} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div style={{ flex: '1', maxWidth: '300px' }}>
             <label style={{ display: 'block', marginBottom: '8px' }}>Send Friend Request</label>
-            <input 
-               list="peers_list" 
-               type="text" 
-               value={addFriendRegno} 
-               onChange={e => setAddFriendRegno(e.target.value)} 
-               placeholder="Friend's Reg No." 
-               style={{ marginBottom: 0 }}
-               required
+            <input
+              list="peers_list"
+              type="text"
+              value={addFriendRegno}
+              onChange={e => setAddFriendRegno(e.target.value)}
+              placeholder="Friend's Reg No."
+              style={{ marginBottom: 0 }}
+              required
             />
             <datalist id="peers_list">
               {peerStudents.map((p, i) => <option key={i} value={p} />)}
@@ -486,13 +515,13 @@ const StudentDashboard = () => {
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{apt.date}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button 
-                      className="btn btn-secondary" 
-                      style={{ 
-                        background: 'rgba(59, 130, 246, 0.1)', 
-                        color: 'var(--primary)', 
-                        border: '1px solid rgba(59, 130, 246, 0.2)', 
-                        padding: '6px 12px', 
+                    <button
+                      className="btn btn-secondary"
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        color: 'var(--primary)',
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        padding: '6px 12px',
                         fontSize: '0.8rem',
                         display: 'flex',
                         alignItems: 'center',
@@ -502,10 +531,10 @@ const StudentDashboard = () => {
                     >
                       <Video size={14} /> Join Video Session
                     </button>
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      padding: '4px 8px', 
-                      borderRadius: '4px', 
+                    <span style={{
+                      fontSize: '0.75rem',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
                       background: apt.status === 'pending' ? 'rgba(255,255,255,0.1)' : 'rgba(52,211,153,0.1)',
                       color: apt.status === 'pending' ? 'var(--text-muted)' : 'var(--success)'
                     }}>
