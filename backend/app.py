@@ -190,8 +190,10 @@ def reject_friend():
 @socketio.on('join')
 def on_join(data):
     regno = str(data.get('regno', '')).strip().lower()
+    print(f"DEBUG SOCKET: Received join request for {regno}")
     if regno:
         join_room(regno)
+        print(f"DEBUG SOCKET: {regno} officially joined room")
 
 # ─────────────────────────────────────────────
 #  GET /api/wellbeing/summary/<regno>
@@ -411,4 +413,4 @@ def predict_stress():
 
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True, use_reloader=False)
+    socketio.run(app, port=5000, debug=True, use_reloader=False)
