@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Brain, Calendar, ShieldAlert, User, CheckCircle } from 'lucide-react';
+import { Brain, Calendar, ShieldAlert, User, CheckCircle, Video } from 'lucide-react';
 import { useUser } from '@clerk/react';
 
 const CounsellorDashboard = () => {
@@ -139,9 +139,27 @@ const CounsellorDashboard = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {regularAppointments.map((apt, i) => (
-                  <div key={i} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '12px', borderRadius: '8px' }}>
-                    <strong>Student ID:</strong> {apt.regno} <br />
-                    <span>Date: {apt.date}</span>
+                  <div key={i} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '1rem' }}>Student ID: {apt.regno}</strong>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Scheduled: {apt.date}</span>
+                    </div>
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ 
+                        background: 'rgba(59, 130, 246, 0.1)', 
+                        color: 'var(--primary)', 
+                        border: '1px solid rgba(59, 130, 246, 0.2)',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '0.9rem'
+                      }}
+                      onClick={() => window.open(`https://meet.jit.si/counselling-${apt.regno.replace(/\s+/g, '-')}-${apt.date}`, '_blank')}
+                    >
+                      <Video size={18} /> Join Video Session
+                    </button>
                   </div>
                 ))}
               </div>

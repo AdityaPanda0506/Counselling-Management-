@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { ShieldAlert, Calendar, CheckCircle, Activity, Heart, Moon, Zap } from 'lucide-react';
+import { ShieldAlert, Calendar, CheckCircle, Activity, Heart, Moon, Zap, Video } from 'lucide-react';
 import { useUser } from '@clerk/react';
 
 const row = (label, val, unit = '', color = 'var(--text-main)') =>
@@ -282,15 +282,33 @@ const StudentDashboard = () => {
                     <strong style={{ display: 'block' }}>{apt.counsellor_name}</strong>
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{apt.date}</span>
                   </div>
-                  <span style={{ 
-                    fontSize: '0.75rem', 
-                    padding: '4px 8px', 
-                    borderRadius: '4px', 
-                    background: apt.status === 'pending' ? 'rgba(255,255,255,0.1)' : 'rgba(52,211,153,0.1)',
-                    color: apt.status === 'pending' ? 'var(--text-muted)' : 'var(--success)'
-                  }}>
-                    {apt.status.toUpperCase()}
-                  </span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ 
+                        background: 'rgba(59, 130, 246, 0.1)', 
+                        color: 'var(--primary)', 
+                        border: '1px solid rgba(59, 130, 246, 0.2)', 
+                        padding: '6px 12px', 
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onClick={() => window.open(`https://meet.jit.si/counselling-${regno.replace(/\s+/g, '-')}-${apt.date}`, '_blank')}
+                    >
+                      <Video size={14} /> Join Video Session
+                    </button>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      padding: '4px 8px', 
+                      borderRadius: '4px', 
+                      background: apt.status === 'pending' ? 'rgba(255,255,255,0.1)' : 'rgba(52,211,153,0.1)',
+                      color: apt.status === 'pending' ? 'var(--text-muted)' : 'var(--success)'
+                    }}>
+                      {apt.status.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
