@@ -123,6 +123,67 @@ def get_all_students():
     return jsonify(list(set([d.get("regno") for d in docs if d.get("regno")]))), 200
 
 # ─────────────────────────────────────────────
+#  FRIENDSHIP MANAGEMENT
+# ─────────────────────────────────────────────
+@app.route('/api/friends/<regno>', methods=['GET'])
+def get_friends(regno):
+    regno = str(regno).strip().lower()
+    doc = db.students.find_one({"regno": regno})
+    if not doc:
+        return jsonify({"friends": [], "pending_requests": []}), 200
+    return jsonify({
+        "friends": doc.get('friends', []),
+        "pending_requests": doc.get('pending_requests', [])
+    }), 200
+
+@app.route('/api/friends/request', methods=['POST'])
+def send_friend_request():
+    data = request.json
+    sender = str(data.get('sender', '')).strip().lower()
+    target = str(data.get('target', '')).strip().lower()
+    if not sender or not target or sender == target:
+        return jsonify({"error": "Invalid regnos"}), 400
+    db.students.update_one(
+        {"regno": target},
+        {"$addToSet": {"pending_requests": sender}},
+        upsert=True
+    )
+    return jsonify({"message": "Request sent"}), 200
+
+@app.route('/api/friends/approve', methods=['POST'])
+def approve_friend():
+    data = request.json
+    user = str(data.get('user', '')).strip().lower()
+    requester = str(data.get('requester', '')).strip().lower()
+    if not user or not requester:
+        return jsonify({"error": "Invalid regnos"}), 400
+    db.students.update_one(
+        {"regno": user},
+        {
+            "$pull": {"pending_requests": requester},
+            "$addToSet": {"friends": requester}
+        },
+        upsert=True
+    )
+    db.students.update_one(
+        {"regno": requester},
+        {"$addToSet": {"friends": user}},
+        upsert=True
+    )
+    return jsonify({"message": "Approved"}), 200
+
+@app.route('/api/friends/reject', methods=['POST'])
+def reject_friend():
+    data = request.json
+    user = str(data.get('user', '')).strip().lower()
+    requester = str(data.get('requester', '')).strip().lower()
+    db.students.update_one(
+        {"regno": user},
+        {"$pull": {"pending_requests": requester}}
+    )
+    return jsonify({"message": "Rejected"}), 200
+
+# ─────────────────────────────────────────────
 #  GET /api/wellbeing/summary/<regno>
 # ─────────────────────────────────────────────
 
