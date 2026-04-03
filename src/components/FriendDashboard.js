@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle, Heart, Activity, Users } from 'lucide-react';
+import { useUser } from '@clerk/react';
 
 const FriendDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [regno, setRegno] = useState('');
   const [block, setBlock]             = useState('Block A');
   const [saving, setSaving]           = useState(false);
@@ -29,7 +31,7 @@ const FriendDashboard = () => {
     setSaving(true);
     try {
       await axios.post('http://localhost:5000/api/wellbeing', {
-        regno:             regno,
+        regno:             regno.trim().toLowerCase(),
         block,
         submitted_by:      'friend',
         friend_mood_obs:   parseInt(form.mood_obs),
@@ -56,17 +58,16 @@ const FriendDashboard = () => {
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', minHeight: '100vh', padding: '40px 20px', width: '100%' }}>
       <div style={{ width: '100%', maxWidth: '580px' }}>
 
-        <button onClick={() => navigate('/')} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '24px' }}>
-          <ArrowLeft size={16} /> Back to Home
-        </button>
-
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>
             <span style={{ background: 'linear-gradient(to right, #34d399, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Friend Observation Portal
             </span>
           </h1>
-          <p style={{ color: 'var(--text-muted)' }}>How is your friend doing? Your honest observations can make a real difference in catching early warning signs.</p>
+          <p style={{ color: 'var(--text-muted)' }}>
+            Logged in as Friend: <strong>{user?.username}</strong>. 
+            How is your friend doing?
+          </p>
         </div>
 
         {/* Student ID */}
@@ -74,9 +75,9 @@ const FriendDashboard = () => {
           <h3 style={{ marginBottom: '16px', fontSize: '1rem', color: 'var(--text-muted)' }}>Step 1 — Which friend are you reporting for?</h3>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px' }}>Friend's Registration No. (1–1000)</label>
-            <input type="number" min="1" max="1000" value={regno} onChange={e => setRegno(e.target.value)}
-              placeholder="e.g., 42" disabled={studentLocked} style={{ marginBottom: 0, opacity: studentLocked ? 0.6 : 1 }} />
+            <label style={{ display: 'block', marginBottom: '8px' }}>Friend's Registration No. (Alphanumeric)</label>
+            <input type="text" value={regno} onChange={e => setRegno(e.target.value)}
+              placeholder="e.g., 3223a" disabled={studentLocked} style={{ marginBottom: 0, opacity: studentLocked ? 0.6 : 1 }} />
           </div>
 
           <div>

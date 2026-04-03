@@ -1,15 +1,17 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { User, Activity, ShieldAlert, LogOut } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/react';
 
 const Sidebar = () => {
-  const navigate = useNavigate();
-  const userName = localStorage.getItem('student_id') || 'User';
-  const role = localStorage.getItem('role') || 'student';
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  
+  const userName = user?.username || 'User';
+  const role = user?.publicMetadata?.role || 'student';
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
+    signOut();
   };
 
   return (

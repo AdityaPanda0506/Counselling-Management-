@@ -27,7 +27,7 @@ db = client.counselling_db
 # }
 
 def hash_regno(regno):
-    return hashlib.sha256(str(regno).encode()).hexdigest()
+    return hashlib.sha256(str(regno).strip().lower().encode()).hexdigest()
 
 def safe_avg(entries, key):
     vals = [e[key] for e in entries if e.get(key) is not None]
@@ -45,7 +45,7 @@ def recent(entries, days=7):
 @app.route('/api/wellbeing', methods=['POST'])
 def log_wellbeing():
     data         = request.json
-    regno        = str(data.get('regno') or data.get('student_id', '')).strip()
+    regno        = str(data.get('regno') or data.get('student_id', '')).strip().lower()
     block        = data.get('block', '')
     submitted_by = data.get('submitted_by', 'student')   # student | parent | friend
 
@@ -116,44 +116,49 @@ def log_wellbeing():
 
 @app.route('/api/wellbeing/summary/<regno>', methods=['GET'])
 def get_wellbeing_summary(regno):
-    doc = db.students.find_one({"regno": str(regno)})
-    if not doc:
-        return jsonify({"has_data": False}), 200
+    regno = str(regno).strip().lower()
+    try:
+        doc = db.students.find_one({"regno": regno})
+        if not doc:
+            return jsonify({"has_data": False}), 200
 
-    s_entries = recent(doc.get("student_entries", []))
-    p_entries = recent(doc.get(f"parent_{regno}", []))
-    f_entries = recent(doc.get(f"friend_{regno}", []))
+        s_entries = recent(doc.get("student_entries", []))
+        p_entries = recent(doc.get(f"parent_{regno}", []))
+        f_entries = recent(doc.get(f"friend_{regno}", []))
 
-    avg_stress  = safe_avg(s_entries, 'stress')
-    avg_mood    = safe_avg(s_entries, 'mood')
-    is_alarming = (avg_mood is not None and avg_mood <= 2.5) or \
-                  (avg_stress is not None and avg_stress >= 4.0)
+        avg_stress  = safe_avg(s_entries, 'stress')
+        avg_mood    = safe_avg(s_entries, 'mood')
+        is_alarming = (avg_mood is not None and avg_mood <= 2.5) or \
+                      (avg_stress is not None and avg_stress >= 4.0)
 
-    return jsonify({
-        "has_data": True,
-        "is_alarming": is_alarming,
+        return jsonify({
+            "has_data": True,
+            "is_alarming": is_alarming,
 
-        "student": {
-            "count":      len(s_entries),
-            "avg_mood":   avg_mood,
-            "avg_stress": avg_stress,
-            "avg_pulse":  safe_avg(s_entries, 'pulse'),
-            "avg_sleep":  safe_avg(s_entries, 'sleep'),
-            "avg_social": safe_avg(s_entries, 'social'),
-        },
-        "parent": {
-            "count":          len(p_entries),
-            "avg_mood_obs":   safe_avg(p_entries, 'mood_obs'),
-            "avg_stress_obs": safe_avg(p_entries, 'stress_obs'),
-            "avg_sleep_obs":  safe_avg(p_entries, 'sleep_obs'),
-        },
-        "friend": {
-            "count":          len(f_entries),
-            "avg_mood_obs":   safe_avg(f_entries, 'mood_obs'),
-            "avg_stress_obs": safe_avg(f_entries, 'stress_obs'),
-            "avg_social_obs": safe_avg(f_entries, 'social_obs'),
-        }
-    }), 200
+            "student": {
+                "count":      len(s_entries),
+                "avg_mood":   avg_mood,
+                "avg_stress": avg_stress,
+                "avg_pulse":  safe_avg(s_entries, 'pulse'),
+                "avg_sleep":  safe_avg(s_entries, 'sleep'),
+                "avg_social": safe_avg(s_entries, 'social'),
+            },
+            "parent": {
+                "count":          len(p_entries),
+                "avg_mood_obs":   safe_avg(p_entries, 'mood_obs'),
+                "avg_stress_obs": safe_avg(p_entries, 'stress_obs'),
+                "avg_sleep_obs":  safe_avg(p_entries, 'sleep_obs'),
+            },
+            "friend": {
+                "count":          len(f_entries),
+                "avg_mood_obs":   safe_avg(f_entries, 'mood_obs'),
+                "avg_stress_obs": safe_avg(f_entries, 'stress_obs'),
+                "avg_social_obs": safe_avg(f_entries, 'social_obs'),
+            }
+        }), 200
+    except Exception as e:
+        print(f"Error in summary for {regno}: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 # ─────────────────────────────────────────────
@@ -225,11 +230,11 @@ def student_details_by_block(block):
 @app.route('/api/counselling/book', methods=['POST'])
 def book_counselling():
     data   = request.json
-    regno  = data.get('student_id') or data.get('regno')
+    regno  = str(data.get('student_id') or data.get('regno')).strip().lower()
     date   = data.get('date')
     is_sos = data.get('is_sos', False)
     db.appointments.insert_one({
-        "regno":      str(regno),
+        "regno":      regno,
         "date":       date,
         "is_sos":     is_sos,
         "status":     "pending",
@@ -251,8 +256,8 @@ def get_appointments():
 @app.route('/api/ml/predict', methods=['GET'])
 def predict_stress():
     dummy = [
-        {"regno": "42",  "risk_level": "High",   "reason": "Consistent drop in mood over 3 weeks"},
-        {"regno": "117", "risk_level": "Medium",  "reason": "Spike in stress on weekends"},
+        {"regno": "3223a", "student_hash": hash_regno("3223a"), "risk_level": "High",   "reason": "Consistent drop in mood over 3 weeks"},
+        {"regno": "student_1", "student_hash": hash_regno("student_1"), "risk_level": "Medium",  "reason": "Spike in stress on weekends"},
     ]
     return jsonify(dummy), 200
 

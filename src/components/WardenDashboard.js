@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertCircle, Lock, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, Lock, Users, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
 
 const WardenDashboard = () => {
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBlock, setSelectedBlock] = useState(null);
@@ -66,9 +68,18 @@ const WardenDashboard = () => {
           <h1>Block Analytics</h1>
           <p style={{ color: 'var(--text-muted)' }}>Aggregated hostel well-being metrics. Click a block to see individual details.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.1)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--primary)', color: 'var(--primary)' }}>
-          <Lock size={16} />
-          <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Privacy-Preserved (SHA-256)</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
+          <button 
+            onClick={() => navigate('/warden/signup')}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+          >
+            <UserPlus size={18} /> Sign Up New Student
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.1)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--primary)', color: 'var(--primary)' }}>
+            <Lock size={16} />
+            <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>Privacy-Preserved (SHA-256)</span>
+          </div>
         </div>
       </div>
 

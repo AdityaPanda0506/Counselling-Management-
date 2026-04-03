@@ -47,7 +47,7 @@ const CounsellorDashboard = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {sosAppointments.map((apt, i) => (
                   <div key={i} style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '8px', borderLeft: '4px solid var(--danger)' }}>
-                    <strong>Student ID:</strong> {apt.student_id} <br />
+                    <strong>Student ID:</strong> {apt.regno} <br />
                     <small style={{ color: 'var(--text-muted)' }}>Requested: {new Date(apt.created_at).toLocaleString()}</small>
                   </div>
                 ))}
@@ -65,7 +65,7 @@ const CounsellorDashboard = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {regularAppointments.map((apt, i) => (
                   <div key={i} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '12px', borderRadius: '8px' }}>
-                    <strong>Student ID:</strong> {apt.student_id} <br />
+                    <strong>Student ID:</strong> {apt.regno} <br />
                     <span>Date: {apt.date}</span>
                   </div>
                 ))}
@@ -90,7 +90,9 @@ const CounsellorDashboard = () => {
             {predictions.map((pred, i) => (
               <div key={i} style={{ background: 'var(--bg-dark)', padding: '16px', borderRadius: '8px', borderLeft: `4px solid ${pred.risk_level === 'High' ? 'var(--danger)' : 'var(--primary)'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <strong style={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>{pred.student_hash.substring(0, 16)}...</strong>
+                  <strong style={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                    {(pred.student_hash || pred.regno || '').substring(0, 16)}...
+                  </strong>
                   <span style={{ color: pred.risk_level === 'High' ? 'var(--danger)' : 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem' }}>{pred.risk_level} Risk</span>
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Pattern: {pred.reason}</p>

@@ -20,7 +20,7 @@ const Landing = () => {
       iconColor: '#f472b6',
       title: 'Parent Portal',
       desc: "Submit your observations about your child's mood, sleep, and social life directly.",
-      route: '/parent',
+      route: '/login/parent',
     },
     {
       icon: <UsersRound size={48} />,
@@ -28,7 +28,7 @@ const Landing = () => {
       iconColor: '#34d399',
       title: 'Friend Portal',
       desc: "Notice something about your friend's mood or behaviour? Your honest observation could help them.",
-      route: '/friend',
+      route: '/login/friend',
     },
     {
       icon: <ShieldAlert size={48} />,
@@ -36,7 +36,7 @@ const Landing = () => {
       iconColor: 'var(--success)',
       title: 'Warden Portal',
       desc: 'View aggregated block-level stress and mood analytics with individual anonymised records.',
-      route: '/login/warden',
+      route: '/warden',
     },
     {
       icon: <Brain size={48} />,

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { ShieldAlert, Calendar, CheckCircle, Activity, Heart, Moon, Zap } from 'lucide-react';
+import { useUser } from '@clerk/react';
 
 const row = (label, val, unit = '', color = 'var(--text-main)') =>
   val != null ? (
@@ -11,8 +12,9 @@ const row = (label, val, unit = '', color = 'var(--text-main)') =>
   ) : null;
 
 const StudentDashboard = () => {
-  const regno  = localStorage.getItem('regno') || localStorage.getItem('student_id');
-  const block   = localStorage.getItem('block') || 'Block A';
+  const { user } = useUser();
+  const regno = user?.username?.toLowerCase();
+  const block = user?.publicMetadata?.block || 'Block A';
 
   const [summary, setSummary]         = useState(null);
   const [loading, setLoading]         = useState(true);
