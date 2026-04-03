@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { ShieldAlert, Calendar, CheckCircle, Activity, Heart, Moon, Zap, Video } from 'lucide-react';
 import { useUser } from '@clerk/react';
+
+const socket = io('http://localhost:5000');
 
 const row = (label, val, unit = '', color = 'var(--text-main)') =>
   val != null ? (
@@ -85,6 +88,34 @@ const StudentDashboard = () => {
   }, [regno, selectedCounsellor, selectedFriend]);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
+
+  useEffect(() => {
+    if (regno) {
+      socket.emit('join', { regno });
+    }
+  }, [regno]);
+
+  useEffect(() => {
+    socket.on('new_friend_request', (data) => {
+      setPendingRequests(prev => {
+        if (!prev.includes(data.sender)) return [...prev, data.sender];
+        return prev;
+      });
+    });
+
+    socket.on('friend_request_approved', (data) => {
+      setFriendsList(prev => {
+        if (!prev.includes(data.user)) return [...prev, data.user];
+        return prev;
+      });
+      fetchSummary(); 
+    });
+
+    return () => {
+      socket.off('new_friend_request');
+      socket.off('friend_request_approved');
+    };
+  }, [fetchSummary]);
 
   const handleLogWellbeing = async (e) => {
     e.preventDefault();
